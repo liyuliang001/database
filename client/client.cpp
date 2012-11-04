@@ -46,52 +46,6 @@ map<string, vector<string> > table2type;
 map<string, vector<string> > table2pkey;
 vector<string> result;
 
-
-/*void done(const vector<string>& table, const map<string, int>& m,
-	int depth, vector<string>& row)
-{
-	FILE *fin;
-	char buf[65536];
-	vector<string> column_name, token;
-	string str;
-	int i;
-
-	if (depth == table.size()) {
-		str = row[0];
-		for (i = 1; i < row.size(); i++)
-			str += "," + row[i];
-		result.push_back(str);
-		return;	
-	}
-
-	assert(table2name.find(table[depth]) != table2name.end());
-	column_name = table2name[table[depth]];
-
-	fin = fopen(((string) "data/" + table[depth]).c_str(), "r");
-	assert(fin != NULL);
-
-	while (fgets(buf, 65536, fin) != NULL) {
-		int len = strlen(buf);
-		if (len > 0 && buf[len - 1] == '\n') {
-			buf[len - 1] = '\0';
-			len--;
-		}
-		if (len == 0)
-			continue;
-
-		split_csv(buf, token);
-		assert(token.size() == column_name.size());
-
-		for (i = 0; i < column_name.size(); i++)
-			if (m.find(column_name[i]) != m.end())
-				row[m.find(column_name[i]) -> second] = token[i];
-
-		done(table, m, depth + 1, row);
-	}
-
-	fclose(fin);
-}*/
-
 void done(const vector<string>& table, const map<string, int>& m,
 	int depth, vector<string>& row,vector<condition> &cond)
 {
@@ -198,26 +152,17 @@ void preprocess()
 
 void execute(const string& sql)
 {
-	vector<string> token, output, table, row;
-	vector<condition> cond;
-	map<string, int> m;
 	
-	int i;
-
-	result.clear();
-
-/*	if (strstr(sql.c_str(), "INSERT") != NULL ||
-		strstr(sql.c_str(), "WHERE") != NULL) {
-		fprintf(stderr, "Sorry, I give up.\n");
-		exit(1);
-	}*/
+	vector<string> token;
 	
-	
-	output.clear();
-	table.clear();
 	tokenize(sql.c_str(), token);
-	printf("%s\n",sql.c_str());
 	if (token[0]=="SELECT"){
+		vector<string>  output, table, row;
+		vector<condition> cond;
+		map<string, int> m;
+		result.clear();
+		output.clear();
+		table.clear();
 		int i;
 		for (i=1;i<token.size();i++){
 			if (token[i]=="FROM") break;
@@ -225,64 +170,41 @@ void execute(const string& sql)
 			output.push_back(token[i]);
 			m[output.back()]=output.size()-1;
 		}
-//		for (map<string,int>::iterator it=m.begin();it!=m.end();it++){
-//			printf("(%s %d)", it->first.c_str(),it->second);
-//		}
-//		printf("\n");
-
-//		for (int j=0;j<output.size();j++){
-//			printf("%s ",output[j].c_str());
-//		}
-//		printf("\n");
 		//from
 		for (i++;i<token.size();i++){
 			if (token[i]=="WHERE"||token[i]==";")break;
 			if (token[i]==",")continue;
 			table.push_back(token[i]);
 		}
-//		for (int j=0;j<table.size();j++){
-//			printf("%s ",table[j].c_str());
-//		}
-//		printf("\n");
 		//where?
 		if (i<token.size()&&token[i]=="WHERE"){
 			for (i++;i<token.size();i+=4){
-//				if (token[i]==";"||token[i]=="AND")continue;
-//				printf("%s %s %s\n",token[i].c_str(),token[i+1].c_str(),token[i+2].c_str());
 				cond.push_back(condition(token[i],token[i+1][0],token[i+2]));
-//				printf("%s %c",cond.back().left.c_str(),cond[i].op);
-//				if (cond[i].type==0)printf("%d\n",cond.back().constant);
-//				else printf("%s\n",cond.back().right.c_str());
-
 			}
 		}
 		row.clear();
 		row.resize(output.size(),"");
 		done(table,m,0,row,cond);
 	}else if (token[0]=="INSERT"){
+//		for (int i=0;i<token.size();i++)printf("%s ",token[i].c_str());
+//		printf("\n");
+		vector<vector<string> > data;
+		int len=table2name[token[2]].size();
+		for (int i=4;i<token.size();i+=len*2+2){
+			vector<string> tmp;
+			for (int j=0;j<len;j++){
+				tmp.push_back(token[i+j*2+1]);
+			}
+			data.push_back(tmp);
+		}
+		FILE *data_file=fopen(((string) "data/" + token[2]).c_str(), "a");
+		for (int i=0;i<data.size();i++){
+			fprintf(data_file,"%s",data[i][0].c_str());
+			for (int j=1;j<len;j++)fprintf(data_file,",%s",data[i][j].c_str());
+			fprintf(data_file,"\n");
+		}
+		fclose(data_file);
 	}
-	
-/*	for (i = 0; i < token.size(); i++) {
-		if (token[i] == "SELECT" || token[i] == ",")
-			continue;
-		if (token[i] == "FROM")
-			break;
-		output.push_back(token[i]);
-	}
-	for (i++; i < token.size(); i++) {
-		if (token[i] == "," || token[i] == ";")
-			continue;
-		table.push_back(token[i]);
-	}
-
-	m.clear();
-	for (i = 0; i < output.size(); i++)
-		m[output[i]] = i;
-
-	row.clear();
-	row.resize(output.size(), "");
-
-	done(table, m, 0, row);*/
 }
 
 int next(char *row)
@@ -305,6 +227,7 @@ void close()
 {
 	// I have nothing to do.
 }
+
 
 
 

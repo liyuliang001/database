@@ -147,7 +147,7 @@ void done(const vector<string>& table, const map<string, int>& m,
 						break;
 				}
 			}else if (cond_now[i].type==1){
-				string a=column_name[names.find(cond_now[i].left)->second];
+				string a=token[names.find(cond_now[i].left)->second];
 				a=a.substr(1,a.size()-2);
 				if (a!=cond_now[i].right)ok=false;
 			}
